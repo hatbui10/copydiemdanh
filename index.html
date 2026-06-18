@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tool Chuyển Đổi Định Dạng Lớp Học</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px 3px; /* 20px trên dưới, 3px hai bên biên */
+            padding: 0;
+            background-color: #121212; /* Dark mode nền chính */
+            color: #e0e0e0; /* Màu chữ sáng */
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #1e1e1e; /* Dark mode nền khung chứa */
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+            border: 1px solid #2d2d2d;
+        }
+        h2 {
+            text-align: center;
+            color: #ffffff;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #3d3d3d;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            resize: vertical;
+            background-color: #2d2d2d; /* Nền ô nhập tối */
+            color: #ffffff; /* Chữ nhập màu trắng */
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: #2980b9;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #3498db;
+        }
+        .output-container {
+            margin-top: 20px;
+            position: relative;
+        }
+        .copy-btn {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            width: auto;
+            padding: 5px 10px;
+            font-size: 12px;
+            background-color: #27ae60;
+            margin-top: 0;
+        }
+        .copy-btn:hover {
+            background-color: #2ecc71;
+        }
+        pre {
+            background-color: #000000; /* Nền kết quả đen hoàn toàn để nổi bật */
+            color: #a6e22e; /* Màu chữ kết quả dạng code tươi sáng */
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            min-height: 100px;
+            line-height: 1.5;
+            border: 1px solid #2d2d2d;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Tool Định Dạng Danh Sách Học Viên</h2>
+    <p><strong>Dán dữ liệu vào đây:</strong></p>
+    <textarea id="inputText" placeholder="Nhập dữ liệu vào đây..."></textarea>
+    
+    <button onclick="processData()">CHUYỂN ĐỔI</button>
+
+    <div class="output-container">
+        <p><strong>Kết quả:</strong></p>
+        <button class="copy-btn" onclick="copyToClipboard()">Copy Kết Quả</button>
+        <pre id="outputText">Kết quả sẽ hiển thị ở đây...</pre>
+    </div>
+</div>
+
+<script>
+function processData() {
+    const input = document.getElementById('inputText').value.trim();
+    if (!input) {
+        alert('Vui lòng nhập dữ liệu!');
+        return;
+    }
+
+    const lines = input.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    if (lines.length < 3) {
+        alert('Dữ liệu không đúng định dạng!');
+        return;
+    }
+
+    // Dòng 1: Thông tin lớp và GV
+    let infoLine = lines[0];
+    infoLine = infoLine.replace(/(SEA\s*-\s*[A-Z0-9]+)\s+(.+)/i, '$1 / $2');
+
+    // Dòng 2: Lịch học
+    const scheduleLine = lines[1];
+    const roomMatch = scheduleLine.match(/(T\d+-\d+)/);
+    const room = roomMatch ? roomMatch[1] : "T2-58";
+
+    // Tìm các ngày học
+    const days = [];
+    if (scheduleLine.includes('T3+5')) {
+        days.push('thứ 3', 'thứ 5');
+    } else {
+        if (scheduleLine.toLowerCase().includes('t3')) days.push('thứ 3');
+        if (scheduleLine.toLowerCase().includes('t5')) days.push('thứ 5');
+    }
+    if (days.length === 0) days.push('thứ 3', 'thứ 5');
+
+    // Các mốc giờ
+    const timeSlots = ["18h00", "18h30", "18h45"];
+
+    // Danh sách học viên
+    const studentLines = lines.slice(2);
+    const formattedStudents = [];
+
+    studentLines.forEach(name => {
+        // Tách tên cá biệt Lê Gia Lĩnh thành Lê Gia và Linh
+        if (name === "Lê Gia Lĩnh") {
+            formattedStudents.push("Lê Gia");
+            formattedStudents.push("Linh");
+        } else {
+            formattedStudents.push(name);
+        }
+    });
+
+    // Tạo chuỗi kết quả thủ công để chèn khoảng cách xa giữa các phần
+    let blocks = [];
+
+    days.forEach(day => {
+        timeSlots.forEach(time => {
+            const key = `"${infoLine}.  ${day} ${room} ${time}"`;
+            
+            // Format mảng học viên thụt lề vào trong
+            const studentArrayString = formattedStudents.map(student => `            "${student}"`).join(",\n");
+            
+            // Ghép thành một block hoàn chỉnh
+            const block = `${key}: [\n${studentArrayString}\n        ]`;
+            blocks.push(block);
+        });
+    });
+
+    // Nối các block lại với nhau và cách nhau bằng 4 dấu xuống dòng (\n\n\n\n) để tạo khoảng cách xa
+    const finalString = blocks.join(",\n\n\n\n");
+
+    document.getElementById('outputText').innerText = finalString;
+}
+
+function copyToClipboard() {
+    const text = document.getElementById('outputText').innerText;
+    if (text === "Kết quả sẽ hiển thị ở đây..." || !text) {
+        alert('Chưa có kết quả để copy!');
+        return;
+    }
+    navigator.clipboard.writeText(text).then(() => {
+        alert('Đã copy thành công vào bộ nhớ tạm!');
+    }).catch(err => {
+        alert('Lỗi khi copy: ' + err);
+    });
+}
+</script>
+
+</body>
+</html>
