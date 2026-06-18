@@ -7,15 +7,15 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px 3px; /* 20px trên dưới, 3px hai bên biên */
+            margin: 20px 3px; /* 3px hai bên biên */
             padding: 0;
-            background-color: #121212; /* Dark mode nền chính */
-            color: #e0e0e0; /* Màu chữ sáng */
+            background-color: #121212; 
+            color: #e0e0e0; 
         }
         .container {
             max-width: 900px;
             margin: 0 auto;
-            background: #1e1e1e; /* Dark mode nền khung chứa */
+            background: #1e1e1e; 
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.5);
@@ -35,8 +35,8 @@
             font-family: monospace;
             font-size: 14px;
             resize: vertical;
-            background-color: #2d2d2d; /* Nền ô nhập tối */
-            color: #ffffff; /* Chữ nhập màu trắng */
+            background-color: #2d2d2d; 
+            color: #ffffff; 
         }
         textarea:focus {
             outline: none;
@@ -76,8 +76,8 @@
             background-color: #2ecc71;
         }
         pre {
-            background-color: #000000; /* Nền kết quả đen hoàn toàn để nổi bật */
-            color: #a6e22e; /* Màu chữ kết quả dạng code tươi sáng */
+            background-color: #000000; 
+            color: #a6e22e; 
             padding: 15px;
             border-radius: 4px;
             overflow-x: auto;
@@ -121,14 +121,19 @@ function processData() {
         return;
     }
 
-    // Dòng 1: Thông tin lớp và GV
+    // Dòng 1: Thông tin lớp và GV (Ví dụ: LIKE - L5 Thu Phương)
     let infoLine = lines[0];
-    infoLine = infoLine.replace(/(SEA\s*-\s*[A-Z0-9]+)\s+(.+)/i, '$1 / $2');
+    // Định dạng lại thành LIKE - L5 / Thu Phương
+    infoLine = infoLine.replace(/^([A-Za-z0-9\s-]+)\s+(.+)$/, function(match, p1, p2) {
+        return p1.trim() + " / " + p2.trim();
+    });
 
-    // Dòng 2: Lịch học
+    // Dòng 2: Lịch học (Ví dụ: T2-58 T3+5: 18h30-20h00 hoặc tương tự)
     const scheduleLine = lines[1];
+    
+    // Tìm mã phòng học (Ví dụ: T3-30 hoặc T2-58)
     const roomMatch = scheduleLine.match(/(T\d+-\d+)/);
-    const room = roomMatch ? roomMatch[1] : "T2-58";
+    const room = roomMatch ? roomMatch[1] : "";
 
     // Tìm các ngày học
     const days = [];
@@ -140,41 +145,45 @@ function processData() {
     }
     if (days.length === 0) days.push('thứ 3', 'thứ 5');
 
-    // Các mốc giờ
+    // Các mốc giờ cố định
     const timeSlots = ["18h00", "18h30", "18h45"];
 
-    // Danh sách học viên
+    // Từ dòng 3 trở đi là danh sách học viên
     const studentLines = lines.slice(2);
     const formattedStudents = [];
 
     studentLines.forEach(name => {
-        // Tách tên cá biệt Lê Gia Lĩnh thành Lê Gia và Linh
+        // Tách các tên cá biệt có 4 chữ như Lê Gia Lĩnh hoặc Lưu Thiên Nhân thành 2 dòng
         if (name === "Lê Gia Lĩnh") {
             formattedStudents.push("Lê Gia");
             formattedStudents.push("Linh");
+        } else if (name === "Lưu Thiên Nhân") {
+            formattedStudents.push("Lưu Thiên");
+            formattedStudents.push("Nhân");
         } else {
             formattedStudents.push(name);
         }
     });
 
-    // Tạo chuỗi kết quả thủ công để chèn khoảng cách xa giữa các phần
+    // Tạo chuỗi kết quả
     let blocks = [];
 
     days.forEach(day => {
         timeSlots.forEach(time => {
-            const key = `"${infoLine}.  ${day} ${room} ${time}"`;
+            // Chuỗi tiêu đề khớp mẫu: "LIKE - L5 / Thu Phương thứ 3 T3-30 18h00"
+            const key = `"${infoLine} ${day} ${room} ${time}"`;
             
-            // Format mảng học viên thụt lề vào trong
+            // Format danh sách học viên thụt lề 12 dấu cách
             const studentArrayString = formattedStudents.map(student => `            "${student}"`).join(",\n");
             
-            // Ghép thành một block hoàn chỉnh
+            // Ghép thành 1 block cấu trúc mảng
             const block = `${key}: [\n${studentArrayString}\n        ]`;
             blocks.push(block);
         });
     });
 
-    // Nối các block lại với nhau và cách nhau bằng 4 dấu xuống dòng (\n\n\n\n) để tạo khoảng cách xa
-    const finalString = blocks.join(",\n\n\n\n");
+    // Kết nối các phần và tạo khoảng cách xa bằng các dòng trắng ngắt quãng
+    const finalString = blocks.join(",\n\n        ");
 
     document.getElementById('outputText').innerText = finalString;
 }
