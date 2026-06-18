@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -121,28 +122,37 @@ function processData() {
         return;
     }
 
-    // Dòng 1: Thông tin lớp và GV (Ví dụ: LIKE - L5 Thu Phương)
+    // Dòng 1: Thông tin lớp và GV
     let infoLine = lines[0];
-    // Định dạng lại thành LIKE - L5 / Thu Phương
     infoLine = infoLine.replace(/^([A-Za-z0-9\s-]+)\s+(.+)$/, function(match, p1, p2) {
         return p1.trim() + " / " + p2.trim();
     });
 
-    // Dòng 2: Lịch học (Ví dụ: T2-58 T3+5: 18h30-20h00 hoặc tương tự)
+    // Dòng 2: Lịch học
     const scheduleLine = lines[1];
     
-    // Tìm mã phòng học (Ví dụ: T3-30 hoặc T2-58)
+    // Tìm mã phòng học (Ví dụ: T3-30, T2-58)
     const roomMatch = scheduleLine.match(/(T\d+-\d+)/);
     const room = roomMatch ? roomMatch[1] : "";
 
-    // Tìm các ngày học
+    // Tìm các ngày học linh hoạt theo số bạn nhập (3-5 hoặc 4-6)
     const days = [];
-    if (scheduleLine.includes('T3+5')) {
+    const cleanSchedule = scheduleLine.replace(/\s+/g, ''); // Xóa khoảng trắng để check chính xác
+    
+    if (cleanSchedule.includes('3-5') || cleanSchedule.includes('3+5')) {
         days.push('thứ 3', 'thứ 5');
+    } else if (cleanSchedule.includes('4-6') || cleanSchedule.includes('4+6')) {
+        days.push('thứ 4', 'thứ 6');
     } else {
-        if (scheduleLine.toLowerCase().includes('t3')) days.push('thứ 3');
-        if (scheduleLine.toLowerCase().includes('t5')) days.push('thứ 5');
+        // Dự phòng nếu quét lẻ chữ cái
+        const lower = cleanSchedule.toLowerCase();
+        if (lower.includes('t3')) days.push('thứ 3');
+        if (lower.includes('t4')) days.push('thứ 4');
+        if (lower.includes('t5')) days.push('thứ 5');
+        if (lower.includes('t6')) days.push('thứ 6');
     }
+    
+    // Nếu vẫn không quét được gì thì mặc định là thứ 3 và thứ 5
     if (days.length === 0) days.push('thứ 3', 'thứ 5');
 
     // Các mốc giờ cố định
@@ -153,7 +163,7 @@ function processData() {
     const formattedStudents = [];
 
     studentLines.forEach(name => {
-        // Tách các tên cá biệt có 4 chữ như Lê Gia Lĩnh hoặc Lưu Thiên Nhân thành 2 dòng
+        // Tách các tên cá biệt
         if (name === "Lê Gia Lĩnh") {
             formattedStudents.push("Lê Gia");
             formattedStudents.push("Linh");
@@ -170,19 +180,18 @@ function processData() {
 
     days.forEach(day => {
         timeSlots.forEach(time => {
-            // Chuỗi tiêu đề khớp mẫu: "LIKE - L5 / Thu Phương thứ 3 T3-30 18h00"
             const key = `"${infoLine} ${day} ${room} ${time}"`;
             
             // Format danh sách học viên thụt lề 12 dấu cách
             const studentArrayString = formattedStudents.map(student => `            "${student}"`).join(",\n");
             
-            // Ghép thành 1 block cấu trúc mảng
+            // Ghép thành 1 block
             const block = `${key}: [\n${studentArrayString}\n        ]`;
             blocks.push(block);
         });
     });
 
-    // Kết nối các phần và tạo khoảng cách xa bằng các dòng trắng ngắt quãng
+    // Kết nối các phần và tạo khoảng cách xa
     const finalString = blocks.join(",\n\n        ");
 
     document.getElementById('outputText').innerText = finalString;
